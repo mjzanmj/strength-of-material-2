@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Axial Member Structural Calculator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --danger-bg: rgba(239, 68, 68, 0.2);
+            --danger-border: #ef4444;
+            --danger-text: #fca5a5;
+            --success-bg: rgba(34, 197, 94, 0.2);
+            --success-border: #22c55e;
+            --success-text: #86efac;
+            --border: #334155;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        header h1 {
+            margin: 0 0 5px 0;
+            font-size: 1.8rem;
+        }
+
+        header p {
+            color: var(--text-muted);
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        input {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            color: var(--text-color);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .metric-card {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .metric-title {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+
+        .alarm {
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            border: 1px solid transparent;
+        }
+
+        .alarm.safe {
+            background-color: var(--success-bg);
+            border-color: var(--success-border);
+            color: var(--success-text);
+        }
+
+        .alarm.danger {
+            background-color: var(--danger-bg);
+            border-color: var(--danger-border);
+            color: var(--danger-text);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+
+        footer {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Axial Member Structural Calculator</h1>
+            <p>Calculate stresses, strains, deformations, and verify structural integrity.</p>
+        </header>
+
+        <!-- Inputs Card -->
+        <div class="card">
+            <h3>Input Parameters</h3>
+            <div class="grid">
+                <div class="input-group">
+                    <label for="axialForce">Axial Force ($P$) [kN]</label>
+                    <input type="number" id="axialForce" value="150" step="any">
+                </div>
+                <div class="input-group">
+                    <label for="length">Length ($L$) [m]</label>
+                    <input type="number" id="length" value="3.0" step="any">
+                </div>
+                <div class="input-group">
+                    <label for="diameter">Diameter ($d$) [mm]</label>
+                    <input type="number" id="diameter" value="50" step="any">
+                </div>
+                <div class="input-group">
+                    <label for="elasticity">Modulus of Elasticity ($E$) [GPa]</label>
+                    <input type="number" id="elasticity" value="200" step="any">
+                </div>
+                <div class="input-group">
+                    <label for="yieldStrength">Yield Strength ($\sigma_y$) [MPa]</label>
+                    <input type="number" id="yieldStrength" value="250" step="any">
+                </div>
+            </div>
+        </div>
+
+        <!-- Results & Alarm Card -->
+        <div class="card">
+            <h3>Analysis Results</h3>
+            
+            <div id="alarmBox" class="alarm safe">✅ Structure is Safe.</div>
+
+            <div class="results-grid">
+                <div class="metric-card">
+                    <div class="metric-title">Cross-Sectional Area ($A$)</div>
+                    <div class="metric-value" id="resArea">0.00 mm²</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Axial Stress ($\sigma$)</div>
+                    <div class="metric-value" id="resStress">0.00 MPa</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Axial Strain ($\epsilon$)</div>
+                    <div class="metric-value" id="resStrain">0.0000 mm/mm</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Deformation ($\delta$)</div>
+                    <div class="metric-value" id="resDeformation">0.00 mm</div>
+                </div>
+            </div>
+
+            <h3>Load vs. Deformation Behavior</h3>
+            <div class="chart-container">
+                <canvas id="deformationChart"></canvas>
+            </div>
+        </div>
+
+        <footer>
+            Deployable via GitHub & Vercel
+        </footer>
+    </div>
+
+    <script>
+        // DOM Elements
+        const forceInput = document.getElementById('axialForce');
+        const lengthInput = document.getElementById('length');
+        const diameterInput = document.getElementById('diameter');
+        const elasticityInput = document.getElementById('elasticity');
+        const yieldStrengthInput = document.getElementById('yieldStrength');
+
+        const resArea = document.getElementById('resArea');
+        const resStress = document.getElementById('resStress');
+        const resStrain = document.getElementById('resStrain');
+        const resDeformation = document.getElementById('resDeformation');
+        const alarmBox = document.getElementById('alarmBox');
+
+        // Chart Initialization
+        const ctx = document.getElementById('deformationChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Load vs. Deformation',
+                    data: [],
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.1,
+                    pointRadius: 0,
+                    pointHitRadius: 10
+                }, {
+                    label: 'Current State',
+                    data: [],
+                    borderColor: '#ef4444',
+                    backgroundColor: '#ef4444',
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    type: 'scatter'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Deformation (mm)', color: '#94a3b8' },
+                        grid: { color: '#334155' },
+                        ticks: { color: '#94a3b8' }
+                    },
+                    y: {
+                        title: { display: true, text: 'Axial Force (kN)', color: '#94a3b8' },
+                        grid: { color: '#334155' },
+                        ticks: { color: '#94a3b8' }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#f8fafc' } }
+                }
+            }
+        });
+
+        function calculate() {
+            // Read values
+            const P = parseFloat(forceInput.value) || 0;       // kN
+            const L = parseFloat(lengthInput.value) || 0;       // m
+            const d = parseFloat(diameterInput.value) || 0;     // mm
+            const E = parseFloat(elasticityInput.value) || 0;   // GPa
+            const sigma_y = parseFloat(yieldStrengthInput.value) || 0; // MPa
+
+            // Calculations
+            // Area A = (pi * d^2) / 4 in mm²
+            const A = (Math.PI * Math.pow(d, 2)) / 4;
+
+            // Stress sigma = P (kN) / A (mm²) * 1000 = MPa
+            const stress = A > 0 ? (P * 1000) / A : 0;
+
+            // Strain epsilon = sigma / (E * 1000) -> since E is in GPa (1 GPa = 1000 MPa), or P*L / (A*E) directly
+            // P in kN, L in m, A in mm², E in GPa -> delta in mm = (P * L * 10^6) / (A * E * 10^3) -> (P * L * 1000) / (A * E)
+            const deformation = (A > 0 && E > 0) ? (P * L * 1000) / (A * E) : 0; // mm
+            const strain = L > 0 ? deformation / (L * 1000) : 0; // mm/mm
+
+            // Update UI text
+            resArea.textContent = A.toFixed(2) + ' mm²';
+            resStress.textContent = stress.toFixed(2) + ' MPa';
+            resStrain.textContent = strain.toExponential(4) + ' mm/mm';
+            resDeformation.textContent = deformation.toFixed(2) + ' mm';
+
+            // Warning Alarm Condition
+            if (stress > sigma_y) {
+                alarmBox.className = 'alarm danger';
+                alarmBox.textContent = '🚨 ALARM: YIELDING DETECTED! STRUCTURAL FAILURE IMMINENT! 🚨';
+            } else {
+                alarmBox.className = 'alarm safe';
+                alarmBox.textContent = '✅ Structure is Safe.';
+            }
+
+            // Update Chart Data (Elastic behavior curve up to yield load + 20%)
+            const P_yield = (sigma_y * A) / 1000; // Yield force in kN
+            const maxP = Math.max(P * 1.3, P_yield * 1.2, 10);
+            
+            const chartPointsCount = 50;
+            const labels = [];
+            const curveData = [];
+
+            for (let i = 0; i <= chartPointsCount; i++) {
+                const currentP = (maxP / chartPointsCount) * i;
+                const currentDelta = (A > 0 && E > 0) ? (currentP * L * 1000) / (A * E) : 0;
+                labels.push(parseFloat(currentDelta.toFixed(2)));
+                curveData.push(currentP);
+            }
+
+            chart.data.labels = labels;
+            chart.data.datasets[0].data = curveData;
+            chart.data.datasets[1].data = [{ x: deformation, y: P }];
+            chart.update();
+        }
+
+        // Attach event listeners to all inputs
+        [forceInput, lengthInput, diameterInput, elasticityInput, yieldStrengthInput].forEach(input => {
+            input.addEventListener('input', calculate);
+        });
+
+        // Initial calculation call
+        calculate();
+    </script>
+</body>
+</html>
