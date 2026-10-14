@@ -60,6 +60,14 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
+        .card h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+        }
+
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -78,7 +86,7 @@
             color: var(--text-muted);
         }
 
-        input {
+        input, select {
             background-color: var(--bg-color);
             border: 1px solid var(--border);
             color: var(--text-color);
@@ -89,8 +97,33 @@
             transition: border-color 0.2s;
         }
 
-        input:focus {
+        input:focus, select:focus {
             border-color: var(--primary);
+        }
+
+        .converter-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 10px;
+            align-items: end;
+        }
+
+        @media (max-width: 600px) {
+            .converter-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .converter-result {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 1rem;
+            color: var(--success-text);
+            font-weight: bold;
+            display: flex;
+            align-items: center;
         }
 
         .results-grid {
@@ -172,28 +205,56 @@
             <p>Calculate stresses, strains, deformations, and verify structural integrity.</p>
         </header>
 
+        <!-- Unit Converter Tool -->
+        <div class="card">
+            <h3>Quick Unit Converter</h3>
+            <div class="converter-row">
+                <div class="input-group">
+                    <label for="convertVal">Value</label>
+                    <input type="number" id="convertVal" value="1" step="any">
+                </div>
+                <div class="input-group">
+                    <label for="convertType">Conversion Type</label>
+                    <select id="convertType">
+                        <option value="GPa_to_MPa">GPa to MPa (×1000)</option>
+                        <option value="MPa_to_GPa">MPa to GPa (÷1000)</option>
+                        <option value="kN_to_N">kN to N (×1000)</option>
+                        <option value="N_to_kN">N to kN (÷1000)</option>
+                        <option value="m_to_mm">m to mm (×1000)</option>
+                        <option value="mm_to_m">mm to m (÷1000)</option>
+                        <option value="mm_sq_to_m_sq">mm² to m² (÷1,000,000)</option>
+                        <option value="m_sq_to_mm_sq">m² to mm² (×1,000,000)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Converted Result</label>
+                    <div id="convertResult" class="converter-result">1000.00</div>
+                </div>
+            </div>
+        </div>
+
         <!-- Inputs Card -->
         <div class="card">
             <h3>Input Parameters</h3>
             <div class="grid">
                 <div class="input-group">
-                    <label for="axialForce">Axial Force ($P$) [kN]</label>
+                    <label for="axialForce">Axial Force (P) [kN]</label>
                     <input type="number" id="axialForce" value="150" step="any">
                 </div>
                 <div class="input-group">
-                    <label for="length">Length ($L$) [m]</label>
+                    <label for="length">Length (L) [m]</label>
                     <input type="number" id="length" value="3.0" step="any">
                 </div>
                 <div class="input-group">
-                    <label for="diameter">Diameter ($d$) [mm]</label>
+                    <label for="diameter">Diameter (d) [mm]</label>
                     <input type="number" id="diameter" value="50" step="any">
                 </div>
                 <div class="input-group">
-                    <label for="elasticity">Modulus of Elasticity ($E$) [GPa]</label>
+                    <label for="elasticity">Modulus of Elasticity (E) [GPa]</label>
                     <input type="number" id="elasticity" value="200" step="any">
                 </div>
                 <div class="input-group">
-                    <label for="yieldStrength">Yield Strength ($\sigma_y$) [MPa]</label>
+                    <label for="yieldStrength">Yield Strength (σ_y) [MPa]</label>
                     <input type="number" id="yieldStrength" value="250" step="any">
                 </div>
             </div>
@@ -207,19 +268,19 @@
 
             <div class="results-grid">
                 <div class="metric-card">
-                    <div class="metric-title">Cross-Sectional Area ($A$)</div>
+                    <div class="metric-title">Cross-Sectional Area (A)</div>
                     <div class="metric-value" id="resArea">0.00 mm²</div>
                 </div>
                 <div class="metric-card">
-                    <div class="metric-title">Axial Stress ($\sigma$)</div>
+                    <div class="metric-title">Axial Stress (σ)</div>
                     <div class="metric-value" id="resStress">0.00 MPa</div>
                 </div>
                 <div class="metric-card">
-                    <div class="metric-title">Axial Strain ($\epsilon$)</div>
+                    <div class="metric-title">Axial Strain (ε)</div>
                     <div class="metric-value" id="resStrain">0.0000 mm/mm</div>
                 </div>
                 <div class="metric-card">
-                    <div class="metric-title">Deformation ($\delta$)</div>
+                    <div class="metric-title">Deformation (δ)</div>
                     <div class="metric-value" id="resDeformation">0.00 mm</div>
                 </div>
             </div>
@@ -236,7 +297,7 @@
     </div>
 
     <script>
-        // DOM Elements
+        // DOM Elements for Calculator
         const forceInput = document.getElementById('axialForce');
         const lengthInput = document.getElementById('length');
         const diameterInput = document.getElementById('diameter');
@@ -248,6 +309,34 @@
         const resStrain = document.getElementById('resStrain');
         const resDeformation = document.getElementById('resDeformation');
         const alarmBox = document.getElementById('alarmBox');
+
+        // DOM Elements for Converter
+        const convertVal = document.getElementById('convertVal');
+        const convertType = document.getElementById('convertType');
+        const convertResult = document.getElementById('convertResult');
+
+        function runConverter() {
+            const val = parseFloat(convertVal.value) || 0;
+            const type = convertType.value;
+            let result = 0;
+
+            switch(type) {
+                case 'GPa_to_MPa': result = val * 1000; break;
+                case 'MPa_to_GPa': result = val / 1000; break;
+                case 'kN_to_N': result = val * 1000; break;
+                case 'N_to_kN': result = val / 1000; break;
+                case 'm_to_mm': result = val * 1000; break;
+                case 'mm_to_m': result = val / 1000; break;
+                case 'mm_sq_to_m_sq': result = val / 1000000; break;
+                case 'm_sq_to_mm_sq': result = val * 1000000; break;
+            }
+
+            convertResult.textContent = result.toLocaleString(undefined, { maximumSignificantDigits: 6 });
+        }
+
+        convertVal.addEventListener('input', runConverter);
+        convertType.addEventListener('change', runConverter);
+        runConverter();
 
         // Chart Initialization
         const ctx = document.getElementById('deformationChart').getContext('2d');
@@ -297,32 +386,22 @@
         });
 
         function calculate() {
-            // Read values
-            const P = parseFloat(forceInput.value) || 0;       // kN
-            const L = parseFloat(lengthInput.value) || 0;       // m
-            const d = parseFloat(diameterInput.value) || 0;     // mm
-            const E = parseFloat(elasticityInput.value) || 0;   // GPa
-            const sigma_y = parseFloat(yieldStrengthInput.value) || 0; // MPa
+            const P = parseFloat(forceInput.value) || 0;
+            const L = parseFloat(lengthInput.value) || 0;
+            const d = parseFloat(diameterInput.value) || 0;
+            const E = parseFloat(elasticityInput.value) || 0;
+            const sigma_y = parseFloat(yieldStrengthInput.value) || 0;
 
-            // Calculations
-            // Area A = (pi * d^2) / 4 in mm²
             const A = (Math.PI * Math.pow(d, 2)) / 4;
-
-            // Stress sigma = P (kN) / A (mm²) * 1000 = MPa
             const stress = A > 0 ? (P * 1000) / A : 0;
+            const deformation = (A > 0 && E > 0) ? (P * L * 1000) / (A * E) : 0;
+            const strain = L > 0 ? deformation / (L * 1000) : 0;
 
-            // Strain epsilon = sigma / (E * 1000) -> since E is in GPa (1 GPa = 1000 MPa), or P*L / (A*E) directly
-            // P in kN, L in m, A in mm², E in GPa -> delta in mm = (P * L * 10^6) / (A * E * 10^3) -> (P * L * 1000) / (A * E)
-            const deformation = (A > 0 && E > 0) ? (P * L * 1000) / (A * E) : 0; // mm
-            const strain = L > 0 ? deformation / (L * 1000) : 0; // mm/mm
-
-            // Update UI text
             resArea.textContent = A.toFixed(2) + ' mm²';
             resStress.textContent = stress.toFixed(2) + ' MPa';
             resStrain.textContent = strain.toExponential(4) + ' mm/mm';
             resDeformation.textContent = deformation.toFixed(2) + ' mm';
 
-            // Warning Alarm Condition
             if (stress > sigma_y) {
                 alarmBox.className = 'alarm danger';
                 alarmBox.textContent = '🚨 ALARM: YIELDING DETECTED! STRUCTURAL FAILURE IMMINENT! 🚨';
@@ -331,8 +410,7 @@
                 alarmBox.textContent = '✅ Structure is Safe.';
             }
 
-            // Update Chart Data (Elastic behavior curve up to yield load + 20%)
-            const P_yield = (sigma_y * A) / 1000; // Yield force in kN
+            const P_yield = (sigma_y * A) / 1000;
             const maxP = Math.max(P * 1.3, P_yield * 1.2, 10);
             
             const chartPointsCount = 50;
@@ -352,12 +430,10 @@
             chart.update();
         }
 
-        // Attach event listeners to all inputs
         [forceInput, lengthInput, diameterInput, elasticityInput, yieldStrengthInput].forEach(input => {
             input.addEventListener('input', calculate);
         });
 
-        // Initial calculation call
         calculate();
     </script>
 </body>
