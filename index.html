@@ -183,6 +183,42 @@
             100% { opacity: 1; }
         }
 
+        .formulas-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .formula-item {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            padding: 12px 15px;
+            border-radius: 8px;
+        }
+
+        .formula-title {
+            font-weight: bold;
+            color: var(--primary);
+            font-size: 1rem;
+            margin-bottom: 5px;
+        }
+
+        .formula-eq {
+            font-family: monospace;
+            background: rgba(59, 130, 246, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 8px;
+            color: #60a5fa;
+        }
+
+        .formula-desc {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
         .chart-container {
             position: relative;
             height: 300px;
@@ -288,6 +324,57 @@
             <h3>Load vs. Deformation Behavior</h3>
             <div class="chart-container">
                 <canvas id="deformationChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Formulas Reference Section -->
+        <div class="card">
+            <h3>Formulas & Definitions</h3>
+            <div class="formulas-list">
+                <div class="formula-item">
+                    <div class="formula-title">Cross-Sectional Area (A)</div>
+                    <div class="formula-eq">A = (π × d²) / 4</div>
+                    <div class="formula-desc">
+                        <strong>Variables & Units:</strong> 
+                        <strong>d</strong> = Diameter of the cross-section (mm) | 
+                        <strong>A</strong> = Cross-sectional area (mm²)
+                    </div>
+                </div>
+
+                <div class="formula-item">
+                    <div class="formula-title">Axial Stress (σ)</div>
+                    <div class="formula-eq">σ = P / A</div>
+                    <div class="formula-desc">
+                        <strong>Variables & Units:</strong> 
+                        <strong>P</strong> = Axial Force (kN, converted to N internally) | 
+                        <strong>A</strong> = Cross-sectional area (mm²) | 
+                        <strong>σ</strong> = Axial Stress (MPa)
+                    </div>
+                </div>
+
+                <div class="formula-item">
+                    <div class="formula-title">Axial Strain (ε)</div>
+                    <div class="formula-eq">ε = δ / L</div>
+                    <div class="formula-desc">
+                        <strong>Variables & Units:</strong> 
+                        <strong>δ</strong> = Axial Deformation (mm) | 
+                        <strong>L</strong> = Original length of the member (m, converted to mm internally) | 
+                        <strong>ε</strong> = Axial Strain (dimensionless / mm/mm)
+                    </div>
+                </div>
+
+                <div class="formula-item">
+                    <div class="formula-title">Axial Deformation (δ)</div>
+                    <div class="formula-eq">δ = (P × L) / (A × E)</div>
+                    <div class="formula-desc">
+                        <strong>Variables & Units:</strong> 
+                        <strong>P</strong> = Axial Force (kN) | 
+                        <strong>L</strong> = Length of member (m) | 
+                        <strong>A</strong> = Cross-sectional area (mm²) | 
+                        <strong>E</strong> = Modulus of Elasticity (GPa) | 
+                        <strong>δ</strong> = Total elongation or compression (mm)
+                    </div>
+                </div>
             </div>
         </div>
 
