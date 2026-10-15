@@ -183,6 +183,26 @@
             100% { opacity: 1; }
         }
 
+        .conversion-log {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 10px;
+        }
+
+        .conversion-item {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .conversion-item span {
+            color: var(--success-text);
+            font-weight: bold;
+        }
+
         .formulas-list {
             display: flex;
             flex-direction: column;
@@ -275,15 +295,15 @@
             <div class="grid">
                 <div class="input-group">
                     <label for="axialForce">Axial Force (P) [kN]</label>
-                    <input type="number" id="axialForce" value="150" step="any">
+                    <input type="number" id="axialForce" value="50" step="any">
                 </div>
                 <div class="input-group">
                     <label for="length">Length (L) [m]</label>
-                    <input type="number" id="length" value="3.0" step="any">
+                    <input type="number" id="length" value="2.0" step="any">
                 </div>
                 <div class="input-group">
                     <label for="diameter">Diameter (d) [mm]</label>
-                    <input type="number" id="diameter" value="50" step="any">
+                    <input type="number" id="diameter" value="20" step="any">
                 </div>
                 <div class="input-group">
                     <label for="elasticity">Modulus of Elasticity (E) [GPa]</label>
@@ -291,8 +311,16 @@
                 </div>
                 <div class="input-group">
                     <label for="yieldStrength">Yield Strength (σ_y) [MPa]</label>
-                    <input type="number" id="yieldStrength" value="250" step="any">
+                    <input type="number" id="yieldStrength" value="350" step="any">
                 </div>
+            </div>
+        </div>
+
+        <!-- Conversion Log Card -->
+        <div class="card">
+            <h3>Applied Unit Conversions (Base Units)</h3>
+            <div class="conversion-log" id="conversionLogContainer">
+                <!-- Dynamically populated -->
             </div>
         </div>
 
@@ -396,6 +424,7 @@
         const resStrain = document.getElementById('resStrain');
         const resDeformation = document.getElementById('resDeformation');
         const alarmBox = document.getElementById('alarmBox');
+        const conversionLogContainer = document.getElementById('conversionLogContainer');
 
         // DOM Elements for Converter
         const convertVal = document.getElementById('convertVal');
@@ -481,23 +510,37 @@
         });
 
         function calculate() {
-            const P = parseFloat(forceInput.value) || 0;
-            const L = parseFloat(lengthInput.value) || 0;
-            const d = parseFloat(diameterInput.value) || 0;
-            const E = parseFloat(elasticityInput.value) || 0;
-            const sigma_y = parseFloat(yieldStrengthInput.value) || 0;
+            const P_kN = parseFloat(forceInput.value) || 0;
+            const L_m = parseFloat(lengthInput.value) || 0;
+            const d_mm = parseFloat(diameterInput.value) || 0;
+            const E_GPa = parseFloat(elasticityInput.value) || 0;
+            const sigma_y_MPa = parseFloat(yieldStrengthInput.value) || 0;
 
-            const A = (Math.PI * Math.pow(d, 2)) / 4;
-            const stress = A > 0 ? (P * 1000) / A : 0;
-            const deformation = (A > 0 && E > 0) ? (P * L * 1000) / (A * E) : 0;
-            const strain = L > 0 ? deformation / (L * 1000) : 0;
+            // Base unit conversions
+            const P_N = P_kN * 1000;
+            const L_mm = L_m * 1000;
+            const E_MPa = E_GPa * 1000;
+
+            // Update Conversion Log View
+            conversionLogContainer.innerHTML = `
+                <div class="conversion-item">Force: ${P_kN} kN × 1,000 = <span>${P_N.toLocaleString()} N</span></div>
+                <div class="conversion-item">Length: ${L_m} m × 1,000 = <span>${L_mm.toLocaleString()} mm</span></div>
+                <div class="conversion-item">Elasticity: ${E_GPa} GPa × 1,000 = <span>${E_MPa.toLocaleString()} MPa</span></div>
+                <div class="conversion-item">Diameter: <span>${d_mm} mm</span> (Base Unit)</div>
+                <div class="conversion-item">Yield Strength: <span>${sigma_y_MPa} MPa</span> (Base Unit)</div>
+            `;
+
+            const A = (Math.PI * Math.pow(d_mm, 2)) / 4;
+            const stress = A > 0 ? P_N / A : 0;
+            const deformation = (A > 0 && E_MPa > 0) ? (P_N * L_mm) / (A * E_MPa) : 0;
+            const strain = L_mm > 0 ? deformation / L_mm : 0;
 
             resArea.textContent = A.toFixed(2) + ' mm²';
             resStress.textContent = stress.toFixed(2) + ' MPa';
             resStrain.innerHTML = formatPowerOfTen(strain, 4);
             resDeformation.textContent = deformation.toFixed(2) + ' mm';
 
-            if (stress > sigma_y) {
+            if (stress > sigma_y_MPa) {
                 alarmBox.className = 'alarm danger';
                 alarmBox.textContent = '🚨 ALARM: YIELDING DETECTED! STRUCTURAL FAILURE IMMINENT! 🚨';
             } else {
@@ -505,23 +548,24 @@
                 alarmBox.textContent = '✅ Structure is Safe.';
             }
 
-            const P_yield = (sigma_y * A) / 1000;
-            const maxP = Math.max(P * 1.3, P_yield * 1.2, 10);
+            const P_yield_kN = (sigma_y_MPa * A) / 1000;
+            const maxP = Math.max(P_kN * 1.3, P_yield_kN * 1.2, 10);
             
             const chartPointsCount = 50;
             const labels = [];
             const curveData = [];
 
             for (let i = 0; i <= chartPointsCount; i++) {
-                const currentP = (maxP / chartPointsCount) * i;
-                const currentDelta = (A > 0 && E > 0) ? (currentP * L * 1000) / (A * E) : 0;
+                const currentP_kN = (maxP / chartPointsCount) * i;
+                const currentP_N = currentP_kN * 1000;
+                const currentDelta = (A > 0 && E_MPa > 0) ? (currentP_N * L_mm) / (A * E_MPa) : 0;
                 labels.push(parseFloat(currentDelta.toFixed(2)));
-                curveData.push(currentP);
+                curveData.push(currentP_kN);
             }
 
             chart.data.labels = labels;
             chart.data.datasets[0].data = curveData;
-            chart.data.datasets[1].data = [{ x: deformation, y: P }];
+            chart.data.datasets[1].data = [{ x: deformation, y: P_kN }];
             chart.update();
         }
 
