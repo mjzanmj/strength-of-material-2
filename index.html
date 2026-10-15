@@ -150,7 +150,7 @@
         }
 
         .metric-value {
-            font-size: 1.25rem;
+            font-size: 1.15rem;
             font-weight: bold;
         }
 
@@ -338,6 +338,14 @@
         convertType.addEventListener('change', runConverter);
         runConverter();
 
+        // Helper to format scientific notation with power of 10
+        function formatPowerOfTen(num, decimals = 2) {
+            if (num === 0) return "0.00 mm/mm";
+            const exponent = Math.floor(Math.log10(Math.abs(num)));
+            const mantissa = num / Math.pow(10, exponent);
+            return `${mantissa.toFixed(decimals)} × 10<sup>${exponent}</sup> mm/mm`;
+        }
+
         // Chart Initialization
         const ctx = document.getElementById('deformationChart').getContext('2d');
         const chart = new Chart(ctx, {
@@ -399,7 +407,7 @@
 
             resArea.textContent = A.toFixed(2) + ' mm²';
             resStress.textContent = stress.toFixed(2) + ' MPa';
-            resStrain.textContent = strain.toExponential(4) + ' mm/mm';
+            resStrain.innerHTML = formatPowerOfTen(strain, 4);
             resDeformation.textContent = deformation.toFixed(2) + ' mm';
 
             if (stress > sigma_y) {
